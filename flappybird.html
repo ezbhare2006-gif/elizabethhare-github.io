@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flappy Fish</title>
+ <nav class="navbar">
+        <div class="container">
+            <!-- Logo/Your Name (links to home) -->
+            <div class="logo">
+                <a href="index.html">
+                    <!-- ACTION REQUIRED: Replace [YOUR NAME] with your actual name -->
+                    Elizabeth Hare
+                </a>
+            </div>
+
+            <!-- Navigation Links -->
+            <ul class="nav-menu">
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="about.html">About Me</a></li>
+                <li><a href="resume.html">Resume</a></li>
+                <li><a href="discover-umd.html">Discover UMD</a></li>
+                <li><a href="flappybird.html">Game</a></li>
+                <!-- OPTIONAL: If you do the extra credit game page, add link here -->
+                <!-- <li><a href="game.html">Game</a></li> -->
+            </ul>
+
+            <!-- Hamburger Menu Icon (for mobile - handled by JavaScript) -->
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+<style>
+  body 
+  {
+    margin: 0;
+    overflow: hidden;
+    background: linear-gradient(#7ba8cd, #1a345c);
+    font-family: Arial, sans-serif;
+  }
+
+  canvas {
+    display: block;
+    margin: 0 auto;
+    background: #173f8f;
+  }
+
+  #overlay {
+    position: absolute;
+    width: 100%;
+    top: 40%;
+    text-align: center;
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+  }
+
+  #score {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 32px;
+    color: white;
+    font-weight: bold;
+  }
+</style>
+</head>
+<div id="overlay">Press SPACE to Start</div>
+<div id="score">0</div>
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let gameState = "start"; // start, playing, gameover
+
+let fish;
+let pipes;
+let frame;
+let score;
+
+function resetGame() {
+  fish = {
+    x: 80,
+    y: 250,
+    width: 40,
+    height: 25,
+    velocity: 0,
+    gravity: 0.5,
+    lift: -8
+  };
+
+  pipes = [];
+  frame = 0;
+  score = 0;
+  document.getElementById("score").innerText = score;
+}
+
+// Controls
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    if (gameState === "start") {
+      resetGame();
+      gameState = "playing";
+      document.getElementById("overlay").innerText = "";
+    } else if (gameState === "playing") {
+      fish.velocity = fish.lift;
+    } else if (gameState === "gameover") {
+      gameState = "start";
+      document.getElementById("overlay").innerText = "Press SPACE to Start";
+    }
+  }
+});
+
+// Draw fish
+function drawFish() {
+  // body
+  ctx.fillStyle = "orange";
+  ctx.beginPath();
+  ctx.ellipse(fish.x, fish.y, fish.width/2, fish.height/2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // tail
+  ctx.beginPath();
+  ctx.moveTo(fish.x - 20, fish.y);
+  ctx.lineTo(fish.x - 35, fish.y - 10);
+  ctx.lineTo(fish.x - 35, fish.y + 10);
+  ctx.closePath();
+  ctx.fill();
+
+  // eye
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(fish.x + 10, fish.y - 5, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "black";
+  ctx.beginPath();
+  ctx.arc(fish.x + 11, fish.y - 5, 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Pipes (seaweed style)
+function createPipe() {
+  let gap = 150;
+  let topHeight = Math.random() * 250 + 50;
+
+  pipes.push({
+    x: canvas.width,
+    top: topHeight,
+    bottom: canvas.height - topHeight - gap,
+    width: 60,
+    passed: false
+  });
+}
+
+function drawPipes() {
+  ctx.fillStyle = "#2ecc71";
+  pipes.forEach(pipe => {
+    ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
+    ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipe.width, pipe.bottom);
+  });
+}
+
+function updatePipes() {
+  pipes.forEach(pipe => {
+    pipe.x -= 2;
+
+    // scoring
+    if (!pipe.passed && pipe.x + pipe.width < fish.x) {
+      score++;
+      document.getElementById("score").innerText = score;
+      pipe.passed = true;
+    }
+
+    // collision
+    if (
+      fish.x + 20 > pipe.x &&
+      fish.x - 20 < pipe.x + pipe.width &&
+      (fish.y - 12 < pipe.top || fish.y + 12 > canvas.height - pipe.bottom)
+    ) {
+      gameState = "gameover";
+      document.getElementById("overlay").innerText = "Game Over - Press SPACE";
+    }
+  });
+
+  pipes = pipes.filter(p => p.x + p.width > 0);
+}
+
+// Game loop
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (gameState === "playing") {
+    // physics
+    fish.velocity += fish.gravity;
+    fish.y += fish.velocity;
+
+    // boundaries
+    if (fish.y > canvas.height || fish.y < 0) {
+      gameState = "gameover";
+      document.getElementById("overlay").innerText = "Game Over - Press SPACE";
+    }
+
+    if (frame % 90 === 0) {
+      createPipe();
+    }
+
+    updatePipes();
+    frame++;
+  }
+
+  drawFish();
+  drawPipes();
+
+  requestAnimationFrame(update);
+}
+
+// init
+resetGame();
+update();
+</script>
+
+</body>
+</html>
